@@ -1,0 +1,36 @@
+P4 Objectives:
+
+Task 1:
+ add new attributes to proc struct definition in proc.h
+  tickets
+  stride
+  pass
+  ticks
+  remain
+ create a new global constant STRIDE1 - determine where to define this
+ add global vars - determine where to define these
+ may be able to init these with their definition?
+  global_tickets
+  global_stride
+  global_pass
+ initialize these values when creating a proc in proc.c
+ determine when, where, and how to update all these vars (context switch?)
+
+Task 2:
+ deterministic scheduling of proc with lowest pass
+  tie-break with total runtime (ticks)
+   tie-break that with pid
+ need to figure out where to implement scheduler (looks like a job for claude)
+ updating new proc and global attrs could also be dealt with here, as this
+ is where the actual context switch will occur
+
+Task 3:
+ create a new system call
+ this should *hopefully* go smoothly as it is what we did in p2
+
+Task 4:
+ another system call
+ pstat - update this each time you update the scheduler info for a proc
+
+Task 5,6:
+ testing, worry about after 1-4
