@@ -6,7 +6,8 @@ Task 1:
   stride
   pass
   ticks
-  remain
+  remain 
+done until here
  create a new global constant STRIDE1 - determine where to define this
  add global vars - determine where to define these
  may be able to init these with their definition?
