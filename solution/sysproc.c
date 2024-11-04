@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "pstat.h"
 
 int
 sys_fork(void)
@@ -112,4 +113,15 @@ sys_settickets(void) // may need to modify global_tickets,global_stride, and glo
   p->pass = global_pass + p->remain;
 
   return 0;
+}
+
+int
+sys_getpinfo(void)
+{
+  struct pstat *ps;
+  
+  if(argptr(0, (void*)&ps, sizeof(*ps)) < 0)
+    return -1;
+    
+  return getptableinfo(ps);
 }

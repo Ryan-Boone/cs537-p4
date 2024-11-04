@@ -622,3 +622,41 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+// move bulk of getpinfo syscall work to proc.c, where we have access to ptable
+int
+getptableinfo(struct pstat* ps)
+{
+  struct proc *p;
+  
+  acquire(&ptable.lock);
+  
+  // clear the current pstat
+  for(int i = 0; i < NPROC; i++) {
+    ps->inuse[i] = 0;
+    ps->tickets[i] = 0;
+    ps->pid[i] = 0;
+    ps->pass[i] = 0;
+    ps->remain[i] = 0;
+    ps->stride[i] = 0;
+    ps->rtime[i] = 0;
+  }
+  
+  // fill pstat
+  int i = 0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->state != UNUSED) {
+      ps->inuse[i] = 1;
+      ps->tickets[i] = p->tickets;
+      ps->pid[i] = p->pid;
+      ps->pass[i] = p->pass;
+      ps->remain[i] = p->remain;
+      ps->stride[i] = p->stride;
+      ps->rtime[i] = p->rtime;
+    }
+    i++;
+  }
+  
+  release(&ptable.lock);
+  return 0;
+}

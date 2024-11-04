@@ -1,3 +1,5 @@
+#include "pstat.h"
+
 struct buf;
 struct context;
 struct file;
@@ -120,6 +122,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             getptableinfo(struct pstat*);
 extern int      global_pass;
 extern int      global_tickets;
 extern int      global_stride;
