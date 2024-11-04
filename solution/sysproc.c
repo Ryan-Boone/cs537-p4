@@ -89,3 +89,27 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_settickets(void) // may need to modify global_tickets,global_stride, and global_pass values here
+{
+  int n;
+  if(argint(0, &n) < 0)
+    return -1;
+
+  if(n < 1) { //smaller than min
+    n = 8;
+  } else if (n > (1<<5)) { //greater than max
+    n = (1<<5);
+  }
+
+  struct proc *p = myproc();
+  int old_stride = p->stride;
+
+  p->tickets = n;
+  p->stride = (1<<10) / p->tickets;
+  p->remain = p->remain * (p->stride / old_stride);
+  p->pass = global_pass + p->remain;
+
+  return 0;
+}
