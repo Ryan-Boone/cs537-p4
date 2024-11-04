@@ -9,6 +9,7 @@ Task 1:
   remain 
 done until here
  create a new global constant STRIDE1 - determine where to define this
+   change: no need to create global constant, can just use (1 << 10)
  add global vars - determine where to define these
  may be able to init these with their definition?
   global_tickets

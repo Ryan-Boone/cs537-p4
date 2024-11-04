@@ -20,6 +20,12 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+//p4
+//new global vars
+int global_tickets = 0;
+int global_stride = 0;
+int global_pass = 0;
+
 void
 pinit(void)
 {
@@ -89,6 +95,13 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
+//p4
+//new initialize stride scheduler fields
+  p->tickets = 8;//default ticket value
+  p->stride = (1<< 10) / p->tickets;
+  p->pass = global_pass;
+  p->remain = 0;
+  p->rtime = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -332,6 +345,8 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
+    #ifdef RR
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
@@ -350,6 +365,61 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       c->proc = 0;
     }
+    #endif
+
+    //p4
+    #ifdef STRIDE
+    struct proc *min_proc = 0;
+    int min_pass = 0x7FFFFFFF;  // Initialize to max int
+    global_tickets = 0;
+
+     // find proc with minimun pass value, tiebreak with rtime, then pid if necessary
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+      else global_tickets += p->tickets; //update global tickets
+
+      if(p->pass < min_pass){
+        min_pass = p->pass;
+        min_proc = p;
+      } else if (p->pass == min_pass){
+        if (p->rtime < min_proc->rtime) { //tiebreaker 1
+          min_pass = p->pass;
+          min_proc = p;
+        } else if (p->rtime == min_proc->rtime) {
+          if (p->pid < min_proc->pid) {   //tiebreaker 2
+            min_pass = p->pass;
+            min_proc = p;
+          }
+        }
+      }
+    }
+
+    if(global_tickets > 0) { //update global stride
+      global_stride = (1 << 10) / global_tickets;
+    }
+
+    if(min_proc != 0){ // found proc with minimum pass
+      p = min_proc;
+      p->pass += p->stride; // update proc attrs and global pass
+      p->rtime++;
+      global_pass += global_stride;
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    #endif
+
     release(&ptable.lock);
 
   }
@@ -435,6 +505,17 @@ sleep(void *chan, struct spinlock *lk)
     acquire(&ptable.lock);  //DOC: sleeplock1
     release(lk);
   }
+
+  //p4
+  //new calculate remain b4 proc sleeps
+  #ifdef STRIDE
+  p->remain = p->pass - global_pass;
+  global_tickets -= p->tickets;
+  if(global_tickets > 0) {
+    global_stride = (1 << 10) / global_tickets;
+  }
+  #endif
+  
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
@@ -462,6 +543,15 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
       p->state = RUNNABLE;
+
+      //p4
+      #ifdef STRIDE
+      global_tickets += p->tickets;
+      if(global_tickets > 0){
+        global_stride = (1 << 10) / global_tickets;
+      }
+      p->pass = global_pass + p->remain;
+      #endif
 }
 
 // Wake up all processes sleeping on chan.
