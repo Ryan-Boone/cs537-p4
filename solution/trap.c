@@ -54,6 +54,14 @@ trap(struct trapframe *tf)
       wakeup(&ticks);
       release(&tickslock);
     }
+	#ifdef STRIDE
+	if(myproc() && myproc()->state == RUNNING){
+	  acquire(&ptable.lock);
+	  myproc()->rtime++;
+	  release(&ptable.lock);
+	}
+	#endif
+
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_IDE:

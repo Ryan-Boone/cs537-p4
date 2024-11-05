@@ -402,7 +402,6 @@ scheduler(void)
     if(min_proc != 0){ // found proc with minimum pass
       p = min_proc;
       p->pass += p->stride; // update proc attrs and global pass
-      p->rtime++;
       global_pass += global_stride;
 
       // Switch to chosen process.  It is the process's job
@@ -418,6 +417,7 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
+    }
     #endif
 
     release(&ptable.lock);
