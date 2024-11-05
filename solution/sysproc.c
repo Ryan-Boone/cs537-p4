@@ -98,7 +98,7 @@ sys_settickets(void) // may need to modify global_tickets,global_stride, and glo
   if(argint(0, &n) < 0)
     return -1;
 
-  if(n < 1) { //smaller than min
+/*  if(n < 1) { //smaller than min
     n = 8;
   } else if (n > (1<<5)) { //greater than max
     n = (1<<5);
@@ -112,7 +112,8 @@ sys_settickets(void) // may need to modify global_tickets,global_stride, and glo
   p->remain = p->remain * (p->stride / old_stride);
   p->pass = global_pass + p->remain;
 
-  return 0;
+  return 0;*/
+ return settickets_proc(n);
 }
 
 int

@@ -127,7 +127,7 @@ extern int      global_pass;
 extern int      global_tickets;
 extern int      global_stride;
 void			update_runtime();
-
+int				settickets_proc(int);
 // swtch.S
 void            swtch(struct context**, struct context*);
 

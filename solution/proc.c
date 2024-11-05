@@ -375,9 +375,17 @@ scheduler(void)
 
      // find proc with minimun pass value, tiebreak with rtime, then pid if necessary
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE || p->state == RUNNING)
+        global_tickets += p->tickets;
+    }
+    // Update global stride
+    if(global_tickets > 0) {
+      global_stride = (1 << 10) / global_tickets;
+    }
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-      else global_tickets += p->tickets; //update global tickets
 
       if(p->pass < min_pass){
         min_pass = p->pass;
@@ -395,14 +403,11 @@ scheduler(void)
       }
     }
 
-    if(global_tickets > 0) { //update global stride
-      global_stride = (1 << 10) / global_tickets;
-    }
 
     if(min_proc != 0){ // found proc with minimum pass
       p = min_proc;
-    //  p->pass += p->stride; // update proc attrs and global pass
-      global_pass += global_stride;
+      p->pass += p->stride; // update proc attrs and global pass
+    //  global_pass += global_stride;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -672,3 +677,44 @@ update_runtime()
   }
   release(&ptable.lock);
 }
+
+int
+settickets_proc(int n)
+{
+  if(n < 1) {
+    n = 8;  // Default value
+  } else if(n > (1 << 5)) {
+    return -1;  // Invalid value
+  }
+  
+  struct proc *p = myproc();
+  
+  acquire(&ptable.lock);
+  
+  // Calculate remaining portion before changing stride
+  int old_stride = p->stride;
+  int remain = p->pass - global_pass;
+  
+  // Update tickets and recalculate stride
+  p->tickets = n;
+  p->stride = (1 << 10) / p->tickets;
+  
+  // Scale remain by stride'/stride and update pass
+  p->remain = (remain * p->stride) / old_stride;
+  p->pass = global_pass + p->remain;
+  
+  // Update global tickets and stride
+  global_tickets = 0;
+  struct proc *proc;
+  for(proc = ptable.proc; proc < &ptable.proc[NPROC]; proc++) {
+    if(proc->state == RUNNABLE || proc->state == RUNNING)
+      global_tickets += proc->tickets;
+  }
+  if(global_tickets > 0) {
+    global_stride = (1 << 10) / global_tickets;
+  }
+  
+  release(&ptable.lock);
+  return 0;
+}
+
