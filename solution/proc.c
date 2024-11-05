@@ -401,7 +401,7 @@ scheduler(void)
 
     if(min_proc != 0){ // found proc with minimum pass
       p = min_proc;
-      p->pass += p->stride; // update proc attrs and global pass
+    //  p->pass += p->stride; // update proc attrs and global pass
       global_pass += global_stride;
 
       // Switch to chosen process.  It is the process's job
@@ -540,8 +540,8 @@ wakeup1(void *chan)
 {
   struct proc *p;
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
 
       //p4
@@ -552,6 +552,8 @@ wakeup1(void *chan)
       }
       p->pass = global_pass + p->remain;
       #endif
+	}
+  }
 }
 
 // Wake up all processes sleeping on chan.
@@ -659,4 +661,14 @@ getptableinfo(struct pstat* ps)
   
   release(&ptable.lock);
   return 0;
+}
+
+void 
+update_runtime()
+{
+  acquire(&ptable.lock);
+  if(myproc() && myproc()->state == RUNNING){
+	myproc()->rtime++;
+  }
+  release(&ptable.lock);
 }
